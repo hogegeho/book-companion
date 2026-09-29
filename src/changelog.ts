@@ -9,6 +9,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.5',
+    date: '2026-09-30',
+    changes: [
+      'ホーム画面から起動したときは、最初のタップで全画面に入る（ステータスバーが残る端末向け）。バックグラウンドから戻った後も次のタップで入り直す',
+      '「全画面を終わる」を押したら、次に起動するまで自動では入らない',
+    ],
+  },
+  {
     version: '0.3.4',
     date: '2026-09-30',
     changes: [
