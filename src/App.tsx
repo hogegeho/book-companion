@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import type { Book } from './db/db.ts'
+import { useFullscreen } from './fullscreen.ts'
 import { importBook, lastOpenedBook, openBook, saveLastPage, titleFromFileName } from './library.ts'
 import { closePdf, openPdf, pdfTitle, type PDFDocumentProxy } from './pdf/pdfjs.ts'
 import { Reader } from './reader/Reader.tsx'
@@ -16,6 +17,7 @@ const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 export default function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const fileInput = useRef<HTMLInputElement>(null)
+  const fullscreen = useFullscreen()
 
   // 起動時：最後に開いた本を開き直す
   useEffect(() => {
@@ -112,7 +114,14 @@ export default function App() {
         )}
       </main>
       <aside className="ai-strip" aria-label="AIの帯">
-        <h1 className="app-title">Book Companion</h1>
+        <header className="strip-header">
+          <h1 className="app-title">Book Companion</h1>
+          {fullscreen.supported && (
+            <button type="button" className="fullscreen-button" onClick={() => void fullscreen.toggle()}>
+              {fullscreen.active ? '全画面を終わる' : '全画面'}
+            </button>
+          )}
+        </header>
         <p className="placeholder">なぞった一節への答えがここに出ます。</p>
       </aside>
     </div>

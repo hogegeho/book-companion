@@ -23,7 +23,9 @@ export default defineConfig({
         lang: 'ja',
         start_url: BASE,
         scope: BASE,
-        display: 'standalone',
+        // ホーム画面から開いたときは、ステータスバーも隠して本に画面を使う
+        display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'],
         orientation: 'landscape',
         background_color: '#f4ecd8',
         theme_color: '#2f4858',
@@ -51,7 +53,7 @@ export default defineConfig({
   ],
   test: {
     environment: 'jsdom',
-    setupFiles: ['fake-indexeddb/auto'],
+    setupFiles: ['src/test-setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
   },
 })
