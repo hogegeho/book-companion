@@ -1,23 +1,27 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Book } from '../db/db.ts'
 import type { PDFDocumentProxy } from '../pdf/pdfjs.ts'
 import { PdfPage } from './PdfPage.tsx'
+import type { Passage } from './selection.ts'
+import { useTap } from './useTap.ts'
 import { MAX_ZOOM, MIN_ZOOM, clampPage, fitWidthScale, zoomIn, zoomOut } from './zoom.ts'
 
 interface Props {
   book: Book
   doc: PDFDocumentProxy
   onPageChange: (page: number) => void
-  /** ツールバー左端に置くもの（「開く」ボタンなど） */
-  toolbarStart?: ReactNode
+  /** 選んでいる一節（別のページのものでもよい。そのページでだけ印を出す） */
+  passage: Passage | null
+  onPassage: (p: Passage) => void
 }
 
 type Zoom = { mode: 'fit' } | { mode: 'manual'; scale: number }
 
-export function Reader({ book, doc, onPageChange, toolbarStart }: Props) {
+export function Reader({ book, doc, onPageChange, passage, onPassage }: Props) {
   const numPages = doc.numPages
   const [page, setPage] = useState(() => clampPage(book.lastPage, numPages))
   const [zoom, setZoom] = useState<Zoom>({ mode: 'fit' })
+  const [markerMode, setMarkerMode] = useState(false)
   const [fitScale, setFitScale] = useState(1)
   // 入力中の文字（入力していないときは null で、今のページを出す）
   const [pageDraft, setPageDraft] = useState<string | null>(null)
@@ -26,6 +30,8 @@ export function Reader({ book, doc, onPageChange, toolbarStart }: Props) {
   const scale = zoom.mode === 'fit' ? fitScale : zoom.scale
 
   const goTo = useCallback((p: number) => setPage(clampPage(p, numPages)), [numPages])
+  const edgePrev = useTap(() => goTo(page - 1))
+  const edgeNext = useTap(() => goTo(page + 1))
 
   useEffect(() => {
     onPageChange(page)
@@ -70,7 +76,6 @@ export function Reader({ book, doc, onPageChange, toolbarStart }: Props) {
   return (
     <div className="reader">
       <div className="toolbar" role="toolbar" aria-label="本の操作">
-        {toolbarStart}
         <span className="book-title" title={book.title}>
           {book.title}
         </span>
@@ -122,25 +127,43 @@ export function Reader({ book, doc, onPageChange, toolbarStart }: Props) {
             type="button"
             onClick={() => setZoom({ mode: 'fit' })}
             aria-pressed={zoom.mode === 'fit'}
+            aria-label="幅に合わせる"
+            title="幅に合わせる"
           >
-            幅に合わせる
+            ↔
           </button>
         </div>
+        <button
+          type="button"
+          className="marker-toggle"
+          onClick={() => setMarkerMode((m) => !m)}
+          aria-pressed={markerMode}
+          title="オンのあいだ、指でなぞった一節を選ぶ"
+        >
+          マーカー
+        </button>
       </div>
       <div className="page-area">
         <div className="page-scroll" ref={scrollRef}>
-          <PdfPage doc={doc} pageNumber={page} scale={scale} />
+          <PdfPage
+            doc={doc}
+            pageNumber={page}
+            scale={scale}
+            markerMode={markerMode}
+            passage={passage?.page === page ? passage : null}
+            onPassage={onPassage}
+          />
         </div>
         {/*
           タブレットを両手で持ったまま左手の親指で送れるよう、左端に透明な押し場所を重ねる。
           表示幅は削らない。ほぼ使う「次へ」を広く（下 2/3）、「前へ」を上 1/3 に。
         */}
         <nav className="edge-turn" aria-label="ページ送り（左端）">
-          <button type="button" className="edge-prev" onClick={() => goTo(page - 1)} disabled={page <= 1}>
+          <button type="button" className="edge-prev" {...edgePrev} disabled={page <= 1}>
             <span aria-hidden="true">‹</span>
             <span className="visually-hidden">前へ</span>
           </button>
-          <button type="button" className="edge-next" onClick={() => goTo(page + 1)} disabled={page >= numPages}>
+          <button type="button" className="edge-next" {...edgeNext} disabled={page >= numPages}>
             <span aria-hidden="true">›</span>
             <span className="visually-hidden">次へ</span>
           </button>

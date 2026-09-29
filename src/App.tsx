@@ -5,6 +5,7 @@ import { useFullscreen } from './fullscreen.ts'
 import { importBook, lastOpenedBook, openBook, saveLastPage, titleFromFileName } from './library.ts'
 import { closePdf, openPdf, pdfTitle, type PDFDocumentProxy } from './pdf/pdfjs.ts'
 import { Reader } from './reader/Reader.tsx'
+import type { Passage } from './reader/selection.ts'
 import { requestPersistentStorage } from './storage/opfs.ts'
 
 type State =
@@ -18,6 +19,8 @@ export default function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const fileInput = useRef<HTMLInputElement>(null)
   const fullscreen = useFullscreen()
+  // なぞって選んだ一節（段4で印として保存、段5で質問に使う）
+  const [passage, setPassage] = useState<Passage | null>(null)
 
   // 起動時：最後に開いた本を開き直す
   useEffect(() => {
@@ -53,6 +56,7 @@ export default function App() {
       const title = (await pdfTitle(next)) ?? titleFromFileName(file.name)
       const book = await importBook(bytes, title)
       void requestPersistentStorage()
+      setPassage(null)
       setState({ kind: 'open', book, doc: next })
     } catch (e) {
       void closePdf(next)
@@ -93,7 +97,8 @@ export default function App() {
             book={state.book}
             doc={state.doc}
             onPageChange={onPageChange}
-            toolbarStart={openButton}
+            passage={passage}
+            onPassage={setPassage}
           />
         ) : (
           <div className="empty">
@@ -116,13 +121,30 @@ export default function App() {
       <aside className="ai-strip" aria-label="AIの帯">
         <header className="strip-header">
           <h1 className="app-title">Book Companion</h1>
-          {fullscreen.supported && (
-            <button type="button" className="fullscreen-button" onClick={() => void fullscreen.toggle()}>
-              {fullscreen.active ? '全画面を終わる' : '全画面'}
-            </button>
-          )}
+          <div className="strip-actions">
+            {/* 本を開いているあいだは、本側のツールバーを一行に収めるため「開く」をこちらに置く */}
+            {state.kind === 'open' && openButton}
+            {fullscreen.supported && (
+              <button type="button" className="fullscreen-button" onClick={() => void fullscreen.toggle()}>
+                {fullscreen.active ? '全画面を終わる' : '全画面'}
+              </button>
+            )}
+          </div>
         </header>
-        <p className="placeholder">なぞった一節への答えがここに出ます。</p>
+        {passage ? (
+          <section className="passage-card" aria-label="選んだ一節">
+            <h2>
+              選んだ一節 <small>p.{passage.page}</small>
+            </h2>
+            <blockquote>{passage.text}</blockquote>
+            <button type="button" onClick={() => setPassage(null)}>
+              選択を消す
+            </button>
+            <p className="placeholder">この一節について質問できるようになります（段5）。</p>
+          </section>
+        ) : (
+          <p className="placeholder">「マーカー」を押して本をなぞると、その一節がここに出ます。</p>
+        )}
       </aside>
     </div>
   )
