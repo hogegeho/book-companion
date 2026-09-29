@@ -31,9 +31,24 @@
   overflow: auto;
 }
 
+.strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .app-title {
   font-size: 1.1rem;
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+.ai-strip .fullscreen-button {
+  background: transparent;
+  color: var(--strip-ink);
+  border-color: rgb(244 236 216 / 0.5);
+  white-space: nowrap;
 }
 
 .placeholder {

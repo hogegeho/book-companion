@@ -25,3 +25,19 @@ test('manifest がリンクされ、Service Worker が登録される', async ({
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope)
   expect(new URL(scope).pathname).toBe('/book-companion/')
 })
+
+test('「全画面」でブラウザの枠を隠し、もう一度押すと戻る', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '全画面', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true)
+  await page.getByRole('button', { name: '全画面を終わる' }).click()
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true)
+  await expect(page.getByRole('button', { name: '全画面', exact: true })).toBeVisible()
+})
+
+test('manifest はホーム画面からの起動を全画面にする', async ({ page }) => {
+  await page.goto('./')
+  const href = await page.locator('link[rel="manifest"]').getAttribute('href')
+  const manifest = await (await page.request.get(new URL(href!, page.url()).href)).json()
+  expect(manifest.display).toBe('fullscreen')
+})
