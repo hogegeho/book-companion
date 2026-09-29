@@ -65,3 +65,9 @@ test('版番号が見え、変更履歴の画面で公開中の版と比べら�
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
 })
+
+test('初めて開いたときから Service Worker の管理下に入る（新しい版がすぐ有効になる設定）', async ({ page }) => {
+  await page.goto('./')
+  // clientsClaim が無いと、2回目に開くまで controller が付かない
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 10_000 })
+})

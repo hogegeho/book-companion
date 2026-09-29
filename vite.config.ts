@@ -70,6 +70,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // 新しい版は待たずに有効にし、開いている画面もすぐ新しい版の管理下に置く。
+        // これが無いと、アプリを開いている限り新しい版が「待機」のまま止まり、再読み込みしても古い版が出続ける。
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // pdf.js の worker（.mjs, 1MB 超）も先に取っておき、オフラインでも本が開けるようにする
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,webmanifest}'],
         globIgnores: ['pdfjs/**'],

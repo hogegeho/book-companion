@@ -9,6 +9,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.3',
+    date: '2026-09-30',
+    changes: [
+      '新しい版が届いても、アプリを開いている限り古い版のまま止まっていた不具合を修正（再読み込みで切り替わるように）',
+      '初めて開いたときから、オフラインでも動くように',
+    ],
+  },
+  {
     version: '0.3.2',
     date: '2026-09-29',
     changes: [
