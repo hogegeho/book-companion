@@ -29,6 +29,46 @@
   color: var(--strip-ink);
   padding: 16px;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.strip-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.ai-strip .version-button {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--strip-ink);
+  opacity: 0.7;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline dotted;
+}
+
+.update-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgb(242 165 65 / 0.2);
+  font-size: 0.9rem;
+}
+
+.ai-strip .link-button {
+  min-height: 0;
+  padding: 0 0 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  text-decoration: underline;
 }
 
 .strip-header {
@@ -327,4 +367,94 @@ button[aria-pressed='true'] {
   background: transparent;
   color: var(--strip-ink);
   border-color: rgb(244 236 216 / 0.5);
+}
+
+/* ---- 別画面（変更履歴など） ---- */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #d9cfb8;
+}
+
+.screen-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.screen-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 24px 32px;
+  max-width: 48rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.version-box {
+  padding: 12px 16px;
+  border: 1px solid #d9cfb8;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.version-box p {
+  margin: 6px 0;
+}
+
+.version-box small {
+  margin-left: 8px;
+  opacity: 0.7;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.changelog {
+  list-style: none;
+  padding: 0;
+}
+
+.changelog > li {
+  padding: 12px 0;
+  border-bottom: 1px solid #e6dcc5;
+}
+
+.changelog h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.changelog h3 small {
+  margin-left: 8px;
+  font-weight: normal;
+  opacity: 0.7;
+}
+
+.changelog ul {
+  margin: 0;
+  padding-left: 1.4em;
+  line-height: 1.7;
 }

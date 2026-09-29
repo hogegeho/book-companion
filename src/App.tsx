@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
+import { ChangelogScreen } from './ChangelogScreen.tsx'
 import type { Book } from './db/db.ts'
 import { useFullscreen } from './fullscreen.ts'
 import { importBook, lastOpenedBook, openBook, saveLastPage, titleFromFileName } from './library.ts'
@@ -7,6 +8,7 @@ import { closePdf, openPdf, pdfTitle, type PDFDocumentProxy } from './pdf/pdfjs.
 import { Reader } from './reader/Reader.tsx'
 import type { Passage } from './reader/selection.ts'
 import { requestPersistentStorage } from './storage/opfs.ts'
+import { APP_VERSION, versionLabel } from './version.ts'
 
 type State =
   | { kind: 'loading' }
@@ -15,12 +17,28 @@ type State =
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
+const LAST_SEEN_VERSION_KEY = 'lastSeenVersion'
+
+/** 前回開いたときから版が変わっていれば、その旨を一度だけ知らせる */
+function consumeVersionChange(): boolean {
+  try {
+    const last = localStorage.getItem(LAST_SEEN_VERSION_KEY)
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION)
+    return last !== null && last !== APP_VERSION
+  } catch {
+    return false
+  }
+}
+
 export default function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const fileInput = useRef<HTMLInputElement>(null)
   const fullscreen = useFullscreen()
   // なぞって選んだ一節（段4で印として保存、段5で質問に使う）
   const [passage, setPassage] = useState<Passage | null>(null)
+  const [showChangelog, setShowChangelog] = useState(false)
+  const [updated, setUpdated] = useState(consumeVersionChange)
+  const closeChangelog = useCallback(() => setShowChangelog(false), [])
 
   // 起動時：最後に開いた本を開き直す
   useEffect(() => {
@@ -145,7 +163,26 @@ export default function App() {
         ) : (
           <p className="placeholder">「マーカー」を押して本をなぞると、その一節がここに出ます。</p>
         )}
+        <footer className="strip-footer">
+          {updated && (
+            <p className="update-notice" role="status">
+              v{APP_VERSION} に更新しました。
+              <button type="button" className="link-button" onClick={() => (setShowChangelog(true), setUpdated(false))}>
+                変更点を見る
+              </button>
+            </p>
+          )}
+          <button
+            type="button"
+            className="version-button"
+            onClick={() => setShowChangelog(true)}
+            aria-label={`版 ${versionLabel()}。変更履歴を開く`}
+          >
+            {versionLabel()}
+          </button>
+        </footer>
       </aside>
+      {showChangelog && <ChangelogScreen onClose={closeChangelog} />}
     </div>
   )
 }
