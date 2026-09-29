@@ -1,0 +1,27 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 34%);
+  height: 100%;
+}
+
+.book {
+  overflow: auto;
+  display: grid;
+  place-items: center;
+}
+
+.ai-strip {
+  background: var(--strip-bg);
+  color: var(--strip-ink);
+  padding: 16px;
+  overflow: auto;
+}
+
+.app-title {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.placeholder {
+  opacity: 0.7;
+}
