@@ -29,6 +29,29 @@ async function textBox(page: Page, needle: string): Promise<Box> {
   }, needle)
 }
 
+/** 文字層で、ある文字列の各文字が描かれている範囲（client 座標） */
+async function charBoxes(page: Page, needle: string): Promise<Box[]> {
+  return page.evaluate((needle) => {
+    for (const span of document.querySelectorAll('.textLayer span')) {
+      const node = [...span.childNodes].find((n) => n.nodeType === Node.TEXT_NODE) as Text | undefined
+      const at = node?.data.indexOf(needle) ?? -1
+      if (node && at >= 0) {
+        const range = document.createRange()
+        return [...needle].map((_, i) => {
+          range.setStart(node, at + i)
+          range.setEnd(node, at + i + 1)
+          const r = range.getBoundingClientRect()
+          return { x: r.x, y: r.y, width: r.width, height: r.height }
+        })
+      }
+    }
+    throw new Error(`not in text layer: ${needle}`)
+  }, needle)
+}
+
+const center = (b: Box): [number, number] => [b.x + b.width / 2, b.y + b.height / 2]
+const contains = (b: Box, [x, y]: [number, number]) => x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height
+
 /** 指でなぞる（CDP のタッチ入力。pointerType は touch になり、touch-action も効く） */
 async function fingerDrag(page: Page, from: [number, number], to: [number, number], steps = 12) {
   const cdp = await page.context().newCDPSession(page)
@@ -41,11 +64,24 @@ async function fingerDrag(page: Page, from: [number, number], to: [number, numbe
   await cdp.detach()
 }
 
-/** 語の上を左端近くから右端近くまでなぞる */
+/** 語の最初の文字の中心から最後の文字の中心までなぞる（フォント差に左右されない） */
 async function traceWord(page: Page, word: string) {
-  const b = await textBox(page, word)
-  const y = b.y + b.height / 2
-  await fingerDrag(page, [b.x + b.width * 0.1, y], [b.x + b.width * 0.9, y])
+  const chars = await charBoxes(page, word)
+  await fingerDrag(page, center(chars[0]!), center(chars[chars.length - 1]!))
+}
+
+/** 印が "AMBER" の5文字の上にだけある：各文字の中心を含み、前後の文字（": " の空白と "."）の中心は含まない */
+async function expectMarkOnAmber(page: Page) {
+  const marks = await highlightBoxes(page)
+  expect(marks).toHaveLength(1)
+  const chars = await charBoxes(page, ' AMBER.')
+  const [before, ...rest] = chars
+  const after = rest.pop()!
+  for (const c of rest) expect(contains(marks[0]!, center(c)), 'AMBER の各文字の上').toBe(true)
+  expect(contains(marks[0]!, center(before!)), '前の空白は含まない').toBe(false)
+  expect(contains(marks[0]!, center(after)), '後ろの "." は含まない').toBe(false)
+  // 高さも行に合っている
+  expectSameBox({ ...marks[0]!, x: 0, width: 1 }, { ...(await textBox(page, 'AMBER')), x: 0, width: 1 }, 2)
 }
 
 const highlightBoxes = (page: Page) =>
@@ -75,10 +111,7 @@ test('マーカーモードで擬似ドラッグ → 期待文字列が選ばれ
   await expect(card).toContainText('p.1')
 
   // 印が "AMBER" の上にある
-  const word = await textBox(page, 'AMBER')
-  let marks = await highlightBoxes(page)
-  expect(marks).toHaveLength(1)
-  expectSameBox(marks[0]!, word, 1.5)
+  await expectMarkOnAmber(page)
 
   // 拡大 → 描き直し後も、印は同じ文字の上
   for (const button of ['拡大', '拡大', '縮小', '縮小', '縮小']) {
@@ -86,9 +119,7 @@ test('マーカーモードで擬似ドラッグ → 期待文字列が選ばれ
     await page.getByRole('button', { name: button, exact: true }).click()
     await expect(page.getByLabel('倍率')).not.toHaveText(before!)
     await expect(renderedPage(page)).toBeVisible()
-    marks = await highlightBoxes(page)
-    expect(marks).toHaveLength(1)
-    expectSameBox(marks[0]!, await textBox(page, 'AMBER'), 1.5)
+    await expectMarkOnAmber(page)
   }
 })
 
@@ -96,9 +127,9 @@ test('二行にまたがってなぞると、読む順の範囲が選ばれる',
   await openFixture(page)
   await page.getByRole('button', { name: 'マーカー' }).click()
   // 1ページ目の本文 1行目の "moves slowly" から 2行目の "careful reader" まで
-  const a = await textBox(page, 'moves slowly')
-  const b = await textBox(page, 'careful reader')
-  await fingerDrag(page, [a.x + 2, a.y + a.height / 2], [b.x + b.width - 4, b.y + b.height / 2], 20)
+  const a = await charBoxes(page, 'moves slowly')
+  const b = await charBoxes(page, 'careful reader')
+  await fingerDrag(page, center(a[0]!), center(b[b.length - 1]!), 20)
   const text = await page.getByRole('region', { name: '選んだ一節' }).locator('blockquote').textContent()
   expect(text).toBe('moves slowly is not wasting time. Each sentence is a small claim, and\na careful reader')
   expect(await highlightBoxes(page)).toHaveLength(2)
