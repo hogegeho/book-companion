@@ -71,3 +71,27 @@ test('初めて開いたときから Service Worker の管理下に入る（新�
   // clientsClaim が無いと、2回目に開くまで controller が付かない
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 10_000 })
 })
+
+test('アプリとして起動（display-mode: standalone）しているときは、最初のタップで全画面に入る', async ({ page }) => {
+  // この Chromium は display-mode を模擬できないので、「アプリとして起動している」ことだけ matchMedia で差し替える
+  // （全画面そのものは本物の Fullscreen API で入る）
+  await page.addInitScript(() => {
+    const real = window.matchMedia.bind(window)
+    window.matchMedia = (q: string) =>
+      q === '(display-mode: standalone)' ? ({ ...real(q), matches: true, media: q } as MediaQueryList) : real(q)
+  })
+  await page.goto('./')
+  expect(await page.evaluate(() => matchMedia('(display-mode: standalone)').matches)).toBe(true)
+
+  const main = (await page.getByRole('main', { name: '本' }).boundingBox())!
+  await page.touchscreen.tap(main.x + main.width / 2, main.y + main.height / 2)
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true)
+  await expect(page.getByRole('button', { name: '全画面を終わる' })).toBeVisible()
+
+  // 自分で終わらせたら、タップしても入り直さない
+  await page.getByRole('button', { name: '全画面を終わる' }).click()
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true)
+  await page.touchscreen.tap(main.x + main.width / 2, main.y + main.height / 2)
+  await page.waitForTimeout(300)
+  expect(await page.evaluate(() => document.fullscreenElement)).toBeNull()
+})
