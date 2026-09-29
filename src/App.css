@@ -154,21 +154,18 @@ button[aria-pressed='true'] {
 
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 8px 12px 8px calc(12px + env(safe-area-inset-left, 0px));
-  border-bottom: 1px solid #d9cfb8;
-  background: var(--bg);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .book-title {
-  flex: 1;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
+  opacity: 0.9;
 }
 
 .toolbar-group {
@@ -184,19 +181,25 @@ button[aria-pressed='true'] {
 }
 
 .page-form {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   font-variant-numeric: tabular-nums;
 }
 
 .page-form input {
   font: inherit;
-  width: 3em;
+  width: 3.5em;
   min-height: 36px;
   text-align: center;
   border: 1px solid #b8ae96;
   border-radius: 6px;
+}
+
+.marker-toggle {
+  width: 100%;
 }
 
 .page-area {
@@ -211,7 +214,8 @@ button[aria-pressed='true'] {
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: 16px;
+  /* zoom.ts の PAGE_PADDING（上下左右の合計）と合わせる */
+  padding: 8px;
   display: flex;
 }
 
@@ -457,4 +461,11 @@ button[aria-pressed='true'] {
   margin: 0;
   padding-left: 1.4em;
   line-height: 1.7;
+}
+
+/* 帯（暗い地）の中で押されている状態がわかるように */
+.ai-strip button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: #c07d22;
+  color: var(--ink);
 }

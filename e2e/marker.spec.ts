@@ -114,7 +114,7 @@ test('マーカーモードで擬似ドラッグ → 期待文字列が選ばれ
   await expectMarkOnAmber(page)
 
   // 拡大 → 描き直し後も、印は同じ文字の上
-  for (const button of ['拡大', '拡大', '縮小', '縮小', '縮小']) {
+  for (const button of ['拡大', '拡大', '拡大', '縮小', '縮小']) {
     const before = await page.getByLabel('倍率').textContent()
     await page.getByRole('button', { name: button, exact: true }).click()
     await expect(page.getByLabel('倍率')).not.toHaveText(before!)
