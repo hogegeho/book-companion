@@ -70,16 +70,16 @@ async function traceWord(page: Page, word: string) {
   await fingerDrag(page, center(chars[0]!), center(chars[chars.length - 1]!))
 }
 
-/** 印が "AMBER" の5文字の上にだけある：各文字の中心を含み、前後の文字（": " の空白と "."）の中心は含まない */
+/**
+ * 印が "AMBER."（語に続く句点まで吸着する）の上にだけある：各文字の中心を含み、前の文字（": " の空白と ":"）の中心は含まない
+ */
 async function expectMarkOnAmber(page: Page) {
   const marks = await highlightBoxes(page)
   expect(marks).toHaveLength(1)
-  const chars = await charBoxes(page, ' AMBER.')
-  const [before, ...rest] = chars
-  const after = rest.pop()!
-  for (const c of rest) expect(contains(marks[0]!, center(c)), 'AMBER の各文字の上').toBe(true)
-  expect(contains(marks[0]!, center(before!)), '前の空白は含まない').toBe(false)
-  expect(contains(marks[0]!, center(after)), '後ろの "." は含まない').toBe(false)
+  const [colon, space, ...word] = await charBoxes(page, ': AMBER.')
+  for (const c of word) expect(contains(marks[0]!, center(c)), 'AMBER. の各文字の上').toBe(true)
+  expect(contains(marks[0]!, center(space!)), '前の空白は含まない').toBe(false)
+  expect(contains(marks[0]!, center(colon!)), '前の ":" は含まない').toBe(false)
   // 高さも行に合っている
   expectSameBox({ ...marks[0]!, x: 0, width: 1 }, { ...(await textBox(page, 'AMBER')), x: 0, width: 1 }, 2)
 }
@@ -104,10 +104,10 @@ test('マーカーモードで擬似ドラッグ → 期待文字列が選ばれ
   await page.getByRole('button', { name: 'マーカー' }).click()
   await expect(page.getByRole('button', { name: 'マーカー' })).toHaveAttribute('aria-pressed', 'true')
 
-  // 目印の行の "AMBER" をなぞる
+  // 目印の行の "AMBER" をなぞる（語に続く句点まで吸着する）
   await traceWord(page, 'AMBER')
   const card = page.getByRole('region', { name: '選んだ一節' })
-  await expect(card.locator('blockquote')).toHaveText('AMBER')
+  await expect(card.locator('blockquote')).toHaveText('AMBER.')
   await expect(card).toContainText('p.1')
 
   // 印が "AMBER" の上にある
@@ -131,7 +131,7 @@ test('二行にまたがってなぞると、読む順の範囲が選ばれる',
   const b = await charBoxes(page, 'careful reader')
   await fingerDrag(page, center(a[0]!), center(b[b.length - 1]!), 20)
   const text = await page.getByRole('region', { name: '選んだ一節' }).locator('blockquote').textContent()
-  expect(text).toBe('moves slowly is not wasting time. Each sentence is a small claim, and\na careful reader')
+  expect(text).toBe('moves slowly is not wasting time. Each sentence is a small claim, and a careful reader')
   expect(await highlightBoxes(page)).toHaveLength(2)
 })
 
@@ -154,11 +154,11 @@ test('マーカーモード中も左端のタップでページを送れ、印�
   await expect(renderedPage(page)).toHaveAttribute('data-page-number', '2')
   await expect(page.locator('.marker-layer rect.passage')).toHaveCount(0)
   // 帯には選んだ一節が残っている
-  await expect(page.getByRole('region', { name: '選んだ一節' }).locator('blockquote')).toHaveText('AMBER')
+  await expect(page.getByRole('region', { name: '選んだ一節' }).locator('blockquote')).toHaveText('AMBER.')
 
   // 2ページ目でも、なぞれば選び直せる
   await traceWord(page, 'BIRCH')
-  await expect(page.getByRole('region', { name: '選んだ一節' }).locator('blockquote')).toHaveText('BIRCH')
+  await expect(page.getByRole('region', { name: '選んだ一節' }).locator('blockquote')).toHaveText('BIRCH.')
   await expect(page.getByRole('region', { name: '選んだ一節' })).toContainText('p.2')
   expect(markerText(2)).toContain('BIRCH')
 })
@@ -170,4 +170,23 @@ test('選択を消せる', async ({ page }) => {
   await page.getByRole('button', { name: '選択を消す' }).click()
   await expect(page.getByRole('region', { name: '選んだ一節' })).toHaveCount(0)
   await expect(page.locator('.marker-layer rect.passage')).toHaveCount(0)
+})
+
+test('語の途中から途中までなぞっても、語・文の切れ目に吸着する', async ({ page }) => {
+  await openFixture(page)
+  await page.getByRole('button', { name: 'マーカー' }).click()
+  const card = page.getByRole('region', { name: '選んだ一節' }).locator('blockquote')
+
+  // "moves slowly" の "ov" から "slo" まで → "moves slowly"
+  const w = await charBoxes(page, 'moves slowly')
+  await fingerDrag(page, center(w[1]!), center(w[8]!))
+  await expect(card).toHaveText('moves slowly')
+
+  // 2文目の大半（"ach" から "came" まで）→ 文全体
+  const a = await charBoxes(page, 'Each sentence')
+  const b = await charBoxes(page, 'came before.')
+  await fingerDrag(page, center(a[1]!), center(b[3]!), 20)
+  await expect(card).toHaveText(
+    'Each sentence is a small claim, and a careful reader checks whether the claim fits with what came before.',
+  )
 })

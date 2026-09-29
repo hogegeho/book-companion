@@ -15,13 +15,16 @@ const PAGE = [...L1, ...L2, ...L3]
 const midY = (l: TextChar[]) => (l[0]!.rect[1] + l[0]!.rect[3]) / 2
 const cx = (l: TextChar[], i: number) => (l[i]!.rect[0] + l[i]!.rect[2]) / 2
 
+// ここでは当たり判定そのものを見るので、吸着はしない（吸着は snap.test.ts）
+const RAW = { snap: false }
+
 describe('なぞりで一節を選ぶ', () => {
   test('一語の上をなぞるとその語が選ばれる', () => {
     // "model" は L1 の 11..15 文字目
     const r = selectByStroke(PAGE, [
       [cx(L1, 11), midY(L1)],
       [cx(L1, 15), midY(L1)],
-    ])
+    ], RAW)
     expect(r.text).toBe('model')
     expect(r.rects).toHaveLength(1)
     expect(r.rects[0]).toEqual([L1[11]!.rect[0], 700, L1[15]!.rect[2], 712])
@@ -31,7 +34,7 @@ describe('なぞりで一節を選ぶ', () => {
     const r = selectByStroke(PAGE, [
       [cx(L1, 0), midY(L1) + 10],
       [cx(L1, 7), midY(L1) + 10],
-    ])
+    ], RAW)
     expect(r.text).toBe('To build')
   })
 
@@ -40,7 +43,7 @@ describe('なぞりで一節を選ぶ', () => {
     const r = selectByStroke(PAGE, [
       [cx(L2, 0), nearL2],
       [cx(L2, 3), nearL2],
-    ])
+    ], RAW)
     expect(r.text).toBe('of a')
   })
 
@@ -48,7 +51,7 @@ describe('なぞりで一節を選ぶ', () => {
     const r = selectByStroke(PAGE, [
       [cx(L1, 0), midY(L1) + 30],
       [cx(L1, 10), midY(L1) + 30],
-    ])
+    ], RAW)
     expect(r.text).toBe('')
   })
 
@@ -58,19 +61,19 @@ describe('なぞりで一節を選ぶ', () => {
       [cx(L1, 3), midY(L1)],
       [cx(L1, 6), midY(L1) + 20], // 一度行から大きく外れる
       [cx(L1, 13), midY(L1)],
-    ])
+    ], RAW)
     expect(r.text).toBe('build a mod')
   })
 
-  test('複数行を折り返しながらなぞると、最初に触れた文字から最後の文字まで読む順に選ぶ', () => {
+  test('複数行を折り返しながらなぞると、最初に触れた文字から最後の文字まで読む順に選ぶ（行の折り返しは空白でつなぐ）', () => {
     // 行末から次の行頭へ戻る斜めの動きで前の行の文字をかすめても、範囲は変わらない
     const r = selectByStroke(PAGE, [
       [cx(L1, 11), midY(L1)],
       [cx(L1, 15), midY(L1)],
       [cx(L2, 0), midY(L2)],
       [cx(L2, 3), midY(L2)],
-    ])
-    expect(r.text).toBe('model\nof a')
+    ], RAW)
+    expect(r.text).toBe('model of a')
     expect(r.rects).toHaveLength(2)
   })
 
@@ -78,8 +81,8 @@ describe('なぞりで一節を選ぶ', () => {
     const r = selectByStroke(PAGE, [
       [cx(L1, 11), midY(L1)],
       [cx(L3, 3), midY(L3)],
-    ])
-    expect(r.text).toBe('model\nof a text is to\nhold')
+    ], RAW)
+    expect(r.text).toBe('model of a text is to hold')
     expect(r.rects).toHaveLength(3)
   })
 
@@ -87,7 +90,7 @@ describe('なぞりで一節を選ぶ', () => {
     const r = selectByStroke(PAGE, [
       [cx(L3, 13), midY(L3)],
       [cx(L3, 9), midY(L3)],
-    ])
+    ], RAW)
     expect(r.text).toBe('parts')
   })
 
@@ -100,7 +103,7 @@ describe('なぞりで一節を選ぶ', () => {
     const r = selectByStroke(col, [
       [310 + 4, 694],
       [310 + 4, 666],
-    ])
+    ], RAW)
     expect(r.text).toBe('読書の')
   })
 
