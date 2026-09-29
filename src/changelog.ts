@@ -9,6 +9,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.4.0',
+    date: '2026-09-30',
+    changes: [
+      'なぞった一節を「印」として保存。ページに残り、帯の「この印を消す」で消せる',
+      '節の最後のページで「この節のまとめ」を書ける（自動保存、節ごとに再表示）',
+      '読書記録（どのページをいつ開いていたか）を残す',
+      '帯の下の「データ」から、記録の書き出し・読み込み・全消去（PDF と API キーは含めない）',
+    ],
+  },
+  {
     version: '0.3.5',
     date: '2026-09-30',
     changes: [

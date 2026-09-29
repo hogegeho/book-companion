@@ -16,6 +16,8 @@ interface Props {
   /** このページの選択中の一節 */
   passage: Passage | null
   onPassage: (p: Passage) => void
+  /** このページに残っている印（選択中のものは除いて、控えめに描く） */
+  saved: readonly { id: string; rects: readonly PdfRect[] }[]
 }
 
 interface Stroke {
@@ -28,7 +30,7 @@ interface Stroke {
 }
 
 /** なぞりの入力と、選んだ一節の印を描く層。印は PDF 座標で持ち、描くたびに今の viewport で変換する。 */
-export function MarkerLayer({ viewport, pageNumber, enabled, textLayer, passage, onPassage }: Props) {
+export function MarkerLayer({ viewport, pageNumber, enabled, textLayer, passage, onPassage, saved }: Props) {
   const stroke = useRef<Stroke | null>(null)
   const [live, setLive] = useState<{ points: PdfPoint[]; rects: PdfRect[] } | null>(null)
 
@@ -93,6 +95,14 @@ export function MarkerLayer({ viewport, pageNumber, enabled, textLayer, passage,
       onLostPointerCapture={enabled ? cancel : undefined}
     >
       <svg width={viewport.width} height={viewport.height} aria-hidden="true">
+        {saved
+          .filter((h) => h.id !== passage?.highlightId)
+          .flatMap((h) =>
+            h.rects.map((r, i) => {
+              const { left, top, width, height } = pdfRectToLocal(viewport, r)
+              return <rect key={`${h.id}-${i}`} className="saved" x={left} y={top} width={width} height={height} rx={2} />
+            }),
+          )}
         {rects.map((r, i) => {
           const { left, top, width, height } = pdfRectToLocal(viewport, r)
           return (

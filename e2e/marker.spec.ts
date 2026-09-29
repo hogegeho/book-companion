@@ -163,13 +163,26 @@ test('マーカーモード中も左端のタップでページを送れ、印�
   expect(markerText(2)).toContain('BIRCH')
 })
 
-test('選択を消せる', async ({ page }) => {
+test('なぞった一節は印として残り、「この印を消す」で消える', async ({ page }) => {
   await openFixture(page)
   await page.getByRole('button', { name: 'マーカー' }).click()
   await traceWord(page, 'AMBER')
-  await page.getByRole('button', { name: '選択を消す' }).click()
+  // 閉じても印はページに残る
+  await page.getByRole('button', { name: '閉じる', exact: true }).click()
   await expect(page.getByRole('region', { name: '選んだ一節' })).toHaveCount(0)
+  await expect(page.locator('.marker-layer rect.saved')).toHaveCount(1)
+  // 再読み込みしても残る
+  await page.reload()
+  await expect(page.locator('.marker-layer rect.saved')).toHaveCount(1)
+
+  // なぞり直して選び、消す
+  await page.getByRole('button', { name: 'マーカー' }).click()
+  await traceWord(page, 'AMBER')
+  await page.getByRole('button', { name: 'この印を消す' }).click()
+  await expect(page.getByRole('region', { name: '選んだ一節' })).toHaveCount(0)
+  // 同じ箇所に2つ残っていたうちの、選んだ方だけが消える
   await expect(page.locator('.marker-layer rect.passage')).toHaveCount(0)
+  await expect(page.locator('.marker-layer rect.saved')).toHaveCount(1)
 })
 
 test('語の途中から途中までなぞっても、語・文の切れ目に吸着する', async ({ page }) => {
