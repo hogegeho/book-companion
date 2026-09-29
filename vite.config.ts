@@ -1,16 +1,50 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { defineConfig, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // GitHub Pages ではリポジトリ名の下に配信される
 const BASE = '/book-companion/'
 
+// 画面に出す版。package.json の version と、どのコミットから作ったか
+const VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }).version
+const GIT_SHA = (() => {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'dev'
+  }
+})()
+const BUILD_TIME = new Date().toISOString()
+
+/** 公開中の版を端末から確かめられるよう、version.json を出す（Service Worker には入れない） */
+function versionFile(): Plugin {
+  return {
+    name: 'version-file',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ version: VERSION, sha: GIT_SHA, builtAt: BUILD_TIME }),
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE,
+  define: {
+    __APP_VERSION__: JSON.stringify(VERSION),
+    __GIT_SHA__: JSON.stringify(GIT_SHA),
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
+  },
   plugins: [
     react(),
+    versionFile(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,

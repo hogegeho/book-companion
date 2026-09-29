@@ -41,3 +41,27 @@ test('manifest はホーム画面からの起動を全画面にする', async ({
   const manifest = await (await page.request.get(new URL(href!, page.url()).href)).json()
   expect(manifest.display).toBe('fullscreen')
 })
+
+test('版番号が見え、変更履歴の画面で公開中の版と比べられる', async ({ page }) => {
+  await page.goto('./')
+  const version = page.getByRole('button', { name: /変更履歴を開く/ })
+  await expect(version).toBeVisible()
+  const label = (await version.textContent())!
+  expect(label).toMatch(/^v\d+\.\d+\.\d+ · \w+$/)
+
+  // version.json が出ていて、画面の版と一致する
+  const res = await page.request.get('version.json')
+  expect(res.ok()).toBe(true)
+  const latest = await res.json()
+  expect(label).toBe(`v${latest.version} · ${latest.sha}`)
+
+  await version.click()
+  const dialog = page.getByRole('dialog', { name: '変更履歴' })
+  await expect(dialog.getByTestId('running-version')).toHaveText(label)
+  await expect(dialog.getByTestId('latest-version')).toHaveText(label)
+  await expect(dialog.getByText(`v${latest.version}`, { exact: false }).first()).toBeVisible()
+  await dialog.getByRole('button', { name: '更新を確認' }).click()
+  await expect(dialog.getByRole('status')).toHaveText('この端末の版が最新です。')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+})
