@@ -68,7 +68,7 @@ Claude Code はこのファイルを最初に読み、下の「段取り」を�
 
 ## 5. データ（Dexie の初期案）
 
-- `books`：id, title, opfsPath, lastPage, addedAt
+- `books`：id（PDF本体の SHA-256）, title, opfsPath, lastPage, addedAt, lastOpenedAt（起動時に開き直す本を決める）
 - `highlights`：id, bookId, page, rects[]（pt）, text, createdAt
 - `questions`：id, bookId, highlightId, chapter, page, question, answer(JSON), createdAt
 - `summaries`：id, bookId, sectionId, body, feedback, updatedAt

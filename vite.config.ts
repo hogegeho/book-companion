@@ -34,12 +34,24 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        // pdf.js の worker（.mjs, 1MB 超）も先に取っておき、オフラインでも本が開けるようにする
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,webmanifest}'],
+        globIgnores: ['pdfjs/**'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // CMap・標準フォントなどは数が多いので、使ったものだけ取っておく
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith(`${BASE}pdfjs/`),
+            handler: 'CacheFirst',
+            options: { cacheName: 'pdfjs-assets', expiration: { maxEntries: 400 } },
+          },
+        ],
       },
     }),
   ],
   test: {
     environment: 'jsdom',
+    setupFiles: ['fake-indexeddb/auto'],
     include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
   },
 })
