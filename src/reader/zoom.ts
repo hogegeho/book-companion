@@ -11,10 +11,25 @@ export function zoomOut(scale: number) {
   return [...ZOOM_STEPS].reverse().find((s) => s < scale - 1e-6) ?? MIN_ZOOM
 }
 
+/** ページのまわりの余白（上下左右の合計、CSS px）。.page-scroll の padding と合わせる */
+export const PAGE_PADDING = 16
+
+const clampScale = (s: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(s * 100) / 100))
+
 /** 表示幅に合わせた倍率。極端な値にならないよう段の範囲に収める。 */
-export function fitWidthScale(containerWidth: number, pageWidthPt: number, padding = 32) {
-  const s = (containerWidth - padding) / pageWidthPt
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(s * 100) / 100))
+export function fitWidthScale(containerWidth: number, pageWidthPt: number, padding = PAGE_PADDING) {
+  return clampScale((containerWidth - padding) / pageWidthPt)
+}
+
+/** ページ全体（縦も横も）が収まる倍率 */
+export function fitPageScale(
+  containerWidth: number,
+  containerHeight: number,
+  pageWidthPt: number,
+  pageHeightPt: number,
+  padding = PAGE_PADDING,
+) {
+  return clampScale(Math.min((containerWidth - padding) / pageWidthPt, (containerHeight - padding) / pageHeightPt))
 }
 
 export function clampPage(page: number, numPages: number) {

@@ -9,6 +9,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.4',
+    date: '2026-09-30',
+    changes: [
+      '倍率の既定を「ページ全体」に（横持ちでもページが縦に収まる）。「全体」と「↔ 幅に合わせる」を切り替え可',
+      'ページ番号・倍率・マーカーの操作を右の帯へ移し、本の表示領域を最大化',
+    ],
+  },
+  {
     version: '0.3.3',
     date: '2026-09-30',
     changes: [

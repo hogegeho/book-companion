@@ -37,6 +37,8 @@ export default function App() {
   // なぞって選んだ一節（段4で印として保存、段5で質問に使う）
   const [passage, setPassage] = useState<Passage | null>(null)
   const [showChangelog, setShowChangelog] = useState(false)
+  // 本の操作を置く場所（帯の中）。Reader が portal で描く
+  const [controlsTarget, setControlsTarget] = useState<HTMLElement | null>(null)
   const [updated, setUpdated] = useState(consumeVersionChange)
   const closeChangelog = useCallback(() => setShowChangelog(false), [])
 
@@ -117,6 +119,7 @@ export default function App() {
             onPageChange={onPageChange}
             passage={passage}
             onPassage={setPassage}
+            controlsTarget={controlsTarget}
           />
         ) : (
           <div className="empty">
@@ -149,6 +152,7 @@ export default function App() {
             )}
           </div>
         </header>
+        <div className="strip-controls" ref={setControlsTarget} />
         {passage ? (
           <section className="passage-card" aria-label="選んだ一節">
             <h2>

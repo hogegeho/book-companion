@@ -99,3 +99,24 @@ test('左端の透明な押し場所をタップしてページを送り・戻�
   await page.touchscreen.tap(prevBox.x + prevBox.width / 2, prevBox.y + prevBox.height / 2)
   await expect(renderedPage(page)).toHaveAttribute('data-page-number', '2')
 })
+
+test('既定は「ページ全体」：横持ちでページが縦にも横にも収まり、操作はAIの帯にある', async ({ page }) => {
+  await openFixture(page)
+  await expect(page.getByRole('button', { name: 'ページ全体' })).toHaveAttribute('aria-pressed', 'true')
+  const scroll = page.locator('.page-scroll')
+  const fits = await scroll.evaluate((el) => el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth)
+  expect(fits).toBe(true)
+
+  // ページ番号・倍率・マーカーは帯の中、本の領域には無い
+  const strip = page.getByRole('complementary', { name: 'AIの帯' })
+  await expect(strip.getByRole('toolbar', { name: '本の操作' })).toBeVisible()
+  await expect(strip.getByLabel('ページ番号')).toBeVisible()
+  await expect(page.getByRole('main', { name: '本' }).getByRole('toolbar')).toHaveCount(0)
+
+  // 幅に合わせると大きくなり、全体に戻せる
+  const before = (await renderedPage(page).boundingBox())!.width
+  await page.getByRole('button', { name: '幅に合わせる' }).click()
+  await expect.poll(async () => (await renderedPage(page).boundingBox())?.width ?? 0).toBeGreaterThan(before)
+  await page.getByRole('button', { name: 'ページ全体' }).click()
+  await expect.poll(async () => Math.round((await renderedPage(page).boundingBox())?.width ?? 0)).toBe(Math.round(before))
+})
