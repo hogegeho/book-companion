@@ -1,4 +1,5 @@
 import type { PdfPoint, PdfRect } from './coords.ts'
+import { Snapper } from './snap.ts'
 
 /** 文字層の1文字。run は文字層の span（テキストの一続き）の番号で、読む順に並ぶ。 */
 export interface TextChar {
@@ -19,7 +20,7 @@ export interface Passage {
  * 指のぶれをどこまで許すか。行の太さ（横書きなら文字の高さ）に対する割合で、行と直交する向きの距離。
  * 行と行のあいだは近い方の行に割り当てるので、隣の行を二重に拾うことはない。人の確認①で調整する。
  */
-export const PERPENDICULAR_SLOP = 0.4
+export const PERPENDICULAR_SLOP = 0.6
 /** なぞった線を調べる間隔（pt） */
 const SAMPLE_STEP_PT = 1
 
@@ -41,7 +42,7 @@ const alongRange = (dir: Dir, r: PdfRect): [number, number] => (dir === 'h' ? [r
 const acrossRange = (dir: Dir, r: PdfRect): [number, number] => (dir === 'h' ? [r[1], r[3]] : [r[0], r[2]])
 const distToRange = (v: number, [lo, hi]: [number, number]) => (v < lo ? lo - v : v > hi ? v - hi : 0)
 
-const union = (rects: PdfRect[]): PdfRect => [
+export const union = (rects: PdfRect[]): PdfRect => [
   Math.min(...rects.map((r) => r[0])),
   Math.min(...rects.map((r) => r[1])),
   Math.max(...rects.map((r) => r[2])),
@@ -74,6 +75,7 @@ export class StrokeHitTester {
   first: number | null = null
   last: number | null = null
   private readonly runs: Run[]
+  private snapper: Snapper | null = null
 
   constructor(chars: readonly TextChar[]) {
     this.chars = chars
@@ -134,19 +136,32 @@ export class StrokeHitTester {
     return [Math.min(this.first, this.last), Math.max(this.first, this.last)]
   }
 
-  passage() {
-    return passageFromRange(this.chars, this.range)
+  /** 選んだ一節。語・文節・文の切れ目に吸着させる（snap: false で触れたままの範囲） */
+  passage({ snap = true } = {}) {
+    const range = this.range
+    if (!range || !snap) return passageFromRange(this.chars, range)
+    this.snapper ??= new Snapper(this.chars)
+    return passageFromRange(this.chars, this.snapper.snap(range))
   }
 }
 
 /** 二つの行が同じ行か（横書きなら縦方向に半分以上重なる） */
-function sameLine(a: PdfRect, b: PdfRect) {
+export function sameLine(a: PdfRect, b: PdfRect) {
   const overlap = Math.min(a[3], b[3]) - Math.max(a[1], b[1])
   return overlap > 0.5 * Math.min(a[3] - a[1], b[3] - b[1])
 }
 
 /**
- * 読む順の範囲 [from, to] から一節を作る。run ごとに矩形を一つにまとめ、行が変わるところは改行でつなぐ。
+ * 行の折り返しをつなぐ文字。組版上の折り返しは文の切れ目ではないので、欧文どうしなら空白、和文なら何も挟まない。
+ */
+export function lineJoiner(before: string, after: string) {
+  const last = before.slice(-1)
+  if (!last || /\s/.test(last) || /^\s/.test(after)) return ''
+  return /[\p{Script=Latin}\d,.;:!?)]/u.test(last) ? ' ' : ''
+}
+
+/**
+ * 読む順の範囲 [from, to] から一節を作る。run ごとに矩形を一つにまとめ、行の折り返しはつなぐ。
  */
 export function passageFromRange(
   chars: readonly TextChar[],
@@ -164,14 +179,14 @@ export function passageFromRange(
   }
   let text = ''
   pieces.forEach((p, i) => {
-    if (i > 0) text += sameLine(pieces[i - 1]!.rect, p.rect) ? '' : '\n'
+    if (i > 0 && !sameLine(pieces[i - 1]!.rect, p.rect)) text += lineJoiner(text, p.text)
     text += p.text
   })
   return { text: text.trim(), rects: pieces.map((p) => p.rect) }
 }
 
-export function selectByStroke(chars: readonly TextChar[], stroke: readonly PdfPoint[]) {
+export function selectByStroke(chars: readonly TextChar[], stroke: readonly PdfPoint[], options?: { snap?: boolean }) {
   const tester = new StrokeHitTester(chars)
   tester.addStroke(stroke)
-  return tester.passage()
+  return tester.passage(options)
 }
