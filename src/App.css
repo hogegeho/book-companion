@@ -42,8 +42,18 @@
 .app-title {
   font-size: 1.1rem;
   margin: 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.strip-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-strip .open-button,
 .ai-strip .fullscreen-button {
   background: transparent;
   color: var(--strip-ink);
@@ -106,15 +116,15 @@ button[aria-pressed='true'] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  padding: 8px 12px;
+  gap: 8px 12px;
+  padding: 8px 12px 8px calc(12px + env(safe-area-inset-left, 0px));
   border-bottom: 1px solid #d9cfb8;
   background: var(--bg);
 }
 
 .book-title {
   flex: 1;
-  min-width: 6em;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -149,8 +159,16 @@ button[aria-pressed='true'] {
   border-radius: 6px;
 }
 
+.page-area {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+
 .page-scroll {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: 16px;
@@ -179,4 +197,134 @@ button[aria-pressed='true'] {
   padding: 8px;
   background: #fde8e8;
   color: #9b2c2c;
+}
+
+/* 左端の透明な押し場所（表示幅は削らずに重ねる） */
+.edge-turn {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(56px + env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+.edge-turn button {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  opacity: 0.25;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.edge-turn button span[aria-hidden] {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.edge-turn button:active:not(:disabled) {
+  opacity: 0.6;
+  background: rgb(47 72 88 / 0.12);
+}
+
+.edge-turn button:disabled {
+  opacity: 0.08;
+}
+
+.edge-prev {
+  flex: 1;
+}
+
+.edge-next {
+  flex: 2;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- マーカー ---- */
+
+.marker-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.marker-layer[data-enabled='true'] {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.marker-layer svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.marker-layer .passage {
+  fill: rgb(242 165 65 / 0.4);
+  mix-blend-mode: multiply;
+}
+
+.marker-layer .passage.live {
+  fill: rgb(242 165 65 / 0.3);
+}
+
+.marker-layer .stroke {
+  fill: none;
+  stroke: rgb(242 165 65 / 0.8);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* マーカーモード中は文字の長押し選択を出さない */
+.pdf-page.marker-mode .textLayer {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.marker-toggle[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: #c07d22;
+  color: var(--ink);
+}
+
+.passage-card h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.passage-card h2 small {
+  font-weight: normal;
+  opacity: 0.7;
+}
+
+.passage-card blockquote {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--accent);
+  background: rgb(255 255 255 / 0.08);
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.ai-strip .passage-card button {
+  background: transparent;
+  color: var(--strip-ink);
+  border-color: rgb(244 236 216 / 0.5);
 }
