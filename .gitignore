@@ -1,0 +1,29 @@
+# 本物の本をリポジトリに入れない：PDF は既定で除外し、fixtures/ だけ許可する
+*.pdf
+!fixtures/*.pdf
+
+# Node / ビルド
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+*.tsbuildinfo
+
+# Playwright
+test-results
+playwright-report
+blob-report
+playwright/.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?
