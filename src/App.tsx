@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { ChangelogScreen } from './ChangelogScreen.tsx'
+import { DataScreen } from './DataScreen.tsx'
+import { SummaryCard } from './SummaryCard.tsx'
 import type { Book } from './db/db.ts'
 import { useFullscreen } from './fullscreen.ts'
 import { importBook, lastOpenedBook, openBook, saveLastPage, titleFromFileName } from './library.ts'
+import { loadSections, sectionsEndingAt, type Section } from './outline.ts'
 import { closePdf, openPdf, pdfTitle, type PDFDocumentProxy } from './pdf/pdfjs.ts'
+import { addHighlight, deleteHighlight, startPageView } from './records.ts'
 import { Reader } from './reader/Reader.tsx'
 import type { Passage } from './reader/selection.ts'
 import { requestPersistentStorage } from './storage/opfs.ts'
@@ -37,10 +41,15 @@ export default function App() {
   // なぞって選んだ一節（段4で印として保存、段5で質問に使う）
   const [passage, setPassage] = useState<Passage | null>(null)
   const [showChangelog, setShowChangelog] = useState(false)
+  const [showData, setShowData] = useState(false)
+  const [currentPage, setCurrentPage] = useState<number | null>(null)
+  // 開いている本の節（アウトラインから）。文書ごとに読み直す
+  const [sections, setSections] = useState<{ doc: PDFDocumentProxy; list: Section[] } | null>(null)
   // 本の操作を置く場所（帯の中）。Reader が portal で描く
   const [controlsTarget, setControlsTarget] = useState<HTMLElement | null>(null)
   const [updated, setUpdated] = useState(consumeVersionChange)
   const closeChangelog = useCallback(() => setShowChangelog(false), [])
+  const closeData = useCallback(() => setShowData(false), [])
 
   // 起動時：最後に開いた本を開き直す
   useEffect(() => {
@@ -62,6 +71,18 @@ export default function App() {
   // 開いている文書は、閉じたら（別の本に替えたら）片付ける
   const doc = state.kind === 'open' ? state.doc : null
   useEffect(() => () => void (doc && closePdf(doc)), [doc])
+
+  useEffect(() => {
+    if (!doc) return
+    let alive = true
+    loadSections(doc).then(
+      (list) => alive && setSections({ doc, list }),
+      () => alive && setSections({ doc, list: [] }),
+    )
+    return () => {
+      alive = false
+    }
+  }, [doc])
 
   const onFile = async (file: File) => {
     const bytes = new Uint8Array(await file.arrayBuffer())
@@ -87,10 +108,49 @@ export default function App() {
   const bookId = state.kind === 'open' ? state.book.id : null
   const onPageChange = useCallback(
     (page: number) => {
+      setCurrentPage(page)
       if (bookId) void saveLastPage(bookId, page)
     },
     [bookId],
   )
+
+  // 読書記録：開いているページを、開いた時刻・離れた時刻とともに残す。
+  // アプリを裏に回したら閉じ、戻ったら新しく始める
+  useEffect(() => {
+    if (!bookId || currentPage === null) return
+    let close: Promise<() => Promise<void>> | null = null
+    const start = () => {
+      close ??= startPageView(bookId, currentPage)
+    }
+    const stop = () => {
+      const c = close
+      close = null
+      void c?.then((f) => f())
+    }
+    const onVisibility = () => (document.visibilityState === 'visible' ? start() : stop())
+    if (document.visibilityState !== 'hidden') start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      stop()
+    }
+  }, [bookId, currentPage])
+
+  // なぞった一節は、そのまま印として残す
+  const onPassage = useCallback(
+    async (p: Passage) => {
+      if (!bookId) return
+      setPassage(p)
+      const h = await addHighlight(bookId, p)
+      setPassage((cur) => (cur === p ? { ...p, highlightId: h.id } : cur))
+    },
+    [bookId],
+  )
+
+  const endingSections =
+    state.kind === 'open' && sections?.doc === state.doc && currentPage !== null
+      ? sectionsEndingAt(sections.list, currentPage)
+      : []
 
   const openButton = (
     <label className="open-button">
@@ -118,7 +178,7 @@ export default function App() {
             doc={state.doc}
             onPageChange={onPageChange}
             passage={passage}
-            onPassage={setPassage}
+            onPassage={(p) => void onPassage(p)}
             controlsTarget={controlsTarget}
           />
         ) : (
@@ -159,14 +219,27 @@ export default function App() {
               選んだ一節 <small>p.{passage.page}</small>
             </h2>
             <blockquote>{passage.text}</blockquote>
-            <button type="button" onClick={() => setPassage(null)}>
-              選択を消す
-            </button>
+            <div className="card-actions">
+              <button type="button" onClick={() => setPassage(null)}>
+                閉じる
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (passage.highlightId) void deleteHighlight(passage.highlightId)
+                  setPassage(null)
+                }}
+              >
+                この印を消す
+              </button>
+            </div>
             <p className="placeholder">この一節について質問できるようになります（段5）。</p>
           </section>
         ) : (
-          <p className="placeholder">「マーカー」を押して本をなぞると、その一節がここに出ます。</p>
+          <p className="placeholder">「マーカー」を押して本をなぞると、その一節が印として残り、ここに出ます。</p>
         )}
+        {state.kind === 'open' &&
+          endingSections.map((sec) => <SummaryCard key={`${state.book.id}:${sec.id}`} bookId={state.book.id} section={sec} />)}
         <footer className="strip-footer">
           {updated && (
             <p className="update-notice" role="status">
@@ -176,17 +249,24 @@ export default function App() {
               </button>
             </p>
           )}
-          <button
-            type="button"
-            className="version-button"
-            onClick={() => setShowChangelog(true)}
-            aria-label={`版 ${versionLabel()}。変更履歴を開く`}
-          >
-            {versionLabel()}
-          </button>
+          <div className="footer-links">
+            <button type="button" className="version-button" onClick={() => setShowData(true)}>
+              データ
+            </button>
+            <button
+              type="button"
+              className="version-button"
+              onClick={() => setShowChangelog(true)}
+              aria-label={`版 ${versionLabel()}。変更履歴を開く`}
+            >
+              {versionLabel()}
+            </button>
+          </div>
         </footer>
       </aside>
       {showChangelog && <ChangelogScreen onClose={closeChangelog} />}
+      {/* 読み込み・全消去のあとは、記録を読み直すため起動し直す */}
+      {showData && <DataScreen onClose={closeData} onChanged={() => window.location.reload()} />}
     </div>
   )
 }

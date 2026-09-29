@@ -73,7 +73,7 @@ Claude Code はこのファイルを最初に読み、下の「段取り」を�
 - `books`：id（PDF本体の SHA-256）, title, opfsPath, lastPage, addedAt, lastOpenedAt（起動時に開き直す本を決める）
 - `highlights`：id, bookId, page, rects[]（pt）, text, createdAt
 - `questions`：id, bookId, highlightId, chapter, page, question, answer(JSON), createdAt
-- `summaries`：id, bookId, sectionId, body, feedback, updatedAt
+- `summaries`：id（`${bookId}:${sectionId}`、節ごとに一つ）, bookId, sectionId（アウトライン上の位置 例 "0.1"）, body, feedback, updatedAt
 - `readingLog`：id, bookId, page, openedAt, closedAt
 - `settings`：key, value（APIキーはここだが書き出し対象外）
 
@@ -142,6 +142,6 @@ npm run build
 ## 8. 未決事項（決めたらここを更新する）
 
 - 図解の中身をいつ生成するか（札を置く時点か、開いた時点か）。
-- 「節」の定義：アウトラインが無い本での区切り方。
+- 「節」の定義：アウトラインが無い本での区切り方。（アウトラインがある本は決定済み：いちばん深い項目を節とし、次の節がページの頭から始まればその前のページ、途中から始まればそのページで終わる。アウトラインが無い本では今はまとめ欄を出さない）
 - 過去の問いを「同じ章の最近5件」から広げる条件。
 - 読み上げの声・速度の設定をどこまで持つか。

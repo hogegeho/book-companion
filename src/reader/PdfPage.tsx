@@ -1,6 +1,7 @@
 import { TextLayer, type PDFDocumentProxy, type PDFPageProxy, type RenderTask } from 'pdfjs-dist'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MarkerLayer } from './MarkerLayer.tsx'
+import type { PdfRect } from './coords.ts'
 import type { Passage } from './selection.ts'
 import './textLayer.css'
 
@@ -12,10 +13,11 @@ interface Props {
   /** このページの選択中の一節 */
   passage: Passage | null
   onPassage: (p: Passage) => void
+  saved: readonly { id: string; rects: readonly PdfRect[] }[]
 }
 
 /** 1ページを canvas と文字層で描き、その上にマーカーの層を重ねる。 */
-export function PdfPage({ doc, pageNumber, scale, markerMode, passage, onPassage }: Props) {
+export function PdfPage({ doc, pageNumber, scale, markerMode, passage, onPassage, saved }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   const [loaded, setLoaded] = useState<{ n: number; page: PDFPageProxy } | null>(null)
@@ -106,6 +108,7 @@ export function PdfPage({ doc, pageNumber, scale, markerMode, passage, onPassage
           textLayer={() => textRef.current}
           passage={passage}
           onPassage={onPassage}
+          saved={saved}
         />
       )}
       {error && (

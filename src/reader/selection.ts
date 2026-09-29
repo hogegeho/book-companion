@@ -14,6 +14,8 @@ export interface Passage {
   text: string
   /** 行ごとの矩形（pt） */
   rects: PdfRect[]
+  /** 印として保存したあとの id */
+  highlightId?: string
 }
 
 /**

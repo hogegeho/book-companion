@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { highlightsOnPage } from '../records.ts'
 import type { Book } from '../db/db.ts'
 import type { PDFDocumentProxy } from '../pdf/pdfjs.ts'
 import { PdfPage } from './PdfPage.tsx'
@@ -32,6 +34,8 @@ export function Reader({ book, doc, onPageChange, passage, onPassage, controlsTa
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const scale = zoom.mode === 'manual' ? zoom.scale : fit[zoom.mode]
+  // このページに残っている印（保存・削除にあわせて自動で描き直す）
+  const saved = useLiveQuery(() => highlightsOnPage(book.id, page), [book.id, page]) ?? []
 
   const goTo = useCallback((p: number) => setPage(clampPage(p, numPages)), [numPages])
   const edgePrev = useTap(() => goTo(page - 1))
@@ -174,6 +178,7 @@ export function Reader({ book, doc, onPageChange, passage, onPassage, controlsTa
             markerMode={markerMode}
             passage={passage?.page === page ? passage : null}
             onPassage={onPassage}
+            saved={saved}
           />
         </div>
         {/*
