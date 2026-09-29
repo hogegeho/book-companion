@@ -72,3 +72,30 @@ test('PDFでないファイルは断る', async ({ page }) => {
   await page.getByLabel('PDFを開く').setInputFiles({ name: 'note.pdf', mimeType: 'application/pdf', buffer: Buffer.from('hello') })
   await expect(page.getByRole('alert')).toContainText('PDFとして読めませんでした')
 })
+
+test('左端の透明な押し場所をタップしてページを送り・戻す（表示幅は削らない）', async ({ page }) => {
+  await openFixture(page)
+  const edge = page.getByRole('navigation', { name: 'ページ送り（左端）' })
+  const next = edge.getByRole('button', { name: '次へ' })
+  const prev = edge.getByRole('button', { name: '前へ' })
+
+  // 本の表示部分の左端に重なっていて、ページのスクロール領域の幅を削っていない
+  const scroll = (await page.locator('.page-scroll').boundingBox())!
+  const nextBox = (await next.boundingBox())!
+  const prevBox = (await prev.boundingBox())!
+  expect(Math.abs(nextBox.x - scroll.x)).toBeLessThan(1)
+  expect(nextBox.x + nextBox.width).toBeLessThan(scroll.x + scroll.width)
+  const main = (await page.getByRole('main', { name: '本' }).boundingBox())!
+  expect(Math.abs(scroll.width - main.width)).toBeLessThan(1)
+  // 「次へ」は「前へ」より広く、下側にある
+  expect(nextBox.height).toBeGreaterThan(prevBox.height)
+  expect(nextBox.y).toBeGreaterThan(prevBox.y)
+
+  // 指でタップ
+  await page.touchscreen.tap(nextBox.x + nextBox.width / 2, nextBox.y + nextBox.height / 2)
+  await expect(renderedPage(page)).toHaveAttribute('data-page-number', '2')
+  await page.touchscreen.tap(nextBox.x + nextBox.width / 2, nextBox.y + nextBox.height / 2)
+  await expect(renderedPage(page)).toHaveAttribute('data-page-number', '3')
+  await page.touchscreen.tap(prevBox.x + prevBox.width / 2, prevBox.y + prevBox.height / 2)
+  await expect(renderedPage(page)).toHaveAttribute('data-page-number', '2')
+})

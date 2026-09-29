@@ -127,8 +127,24 @@ export function Reader({ book, doc, onPageChange, toolbarStart }: Props) {
           </button>
         </div>
       </div>
-      <div className="page-scroll" ref={scrollRef}>
-        <PdfPage doc={doc} pageNumber={page} scale={scale} />
+      <div className="page-area">
+        <div className="page-scroll" ref={scrollRef}>
+          <PdfPage doc={doc} pageNumber={page} scale={scale} />
+        </div>
+        {/*
+          タブレットを両手で持ったまま左手の親指で送れるよう、左端に透明な押し場所を重ねる。
+          表示幅は削らない。ほぼ使う「次へ」を広く（下 2/3）、「前へ」を上 1/3 に。
+        */}
+        <nav className="edge-turn" aria-label="ページ送り（左端）">
+          <button type="button" className="edge-prev" onClick={() => goTo(page - 1)} disabled={page <= 1}>
+            <span aria-hidden="true">‹</span>
+            <span className="visually-hidden">前へ</span>
+          </button>
+          <button type="button" className="edge-next" onClick={() => goTo(page + 1)} disabled={page >= numPages}>
+            <span aria-hidden="true">›</span>
+            <span className="visually-hidden">次へ</span>
+          </button>
+        </nav>
       </div>
     </div>
   )
