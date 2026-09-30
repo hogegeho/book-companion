@@ -1,5 +1,6 @@
 import { TextLayer, type PDFDocumentProxy, type PDFPageProxy, type RenderTask } from 'pdfjs-dist'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { cropPassage } from './crop.ts'
 import { MarkerLayer } from './MarkerLayer.tsx'
 import type { PdfRect } from './coords.ts'
 import type { Passage } from './selection.ts'
@@ -107,7 +108,11 @@ export function PdfPage({ doc, pageNumber, scale, markerMode, passage, onPassage
           enabled={markerMode}
           textLayer={() => textRef.current}
           passage={passage}
-          onPassage={onPassage}
+          onPassage={(p) => {
+            // 選んだ時点の描画から、なぞった範囲を画像で切り出して添える
+            const canvas = canvasRef.current
+            onPassage({ ...p, image: canvas && rendered ? cropPassage(canvas, viewport, p.rects) : null })
+          }}
           saved={saved}
         />
       )}

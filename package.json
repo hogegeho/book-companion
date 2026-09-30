@@ -23,11 +23,13 @@
     "prebuild": "node scripts/copy-pdfjs-assets.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
     "pdfjs-dist": "^6.3.289",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
     "workbox-window": "^7.4.1",
     "zod": "^4.6.5"
   },

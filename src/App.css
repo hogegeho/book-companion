@@ -551,3 +551,246 @@ button.danger {
   border-color: #9b2c2c;
   color: #9b2c2c;
 }
+
+/* ---- 帯の整理（小さめのボタン・詰めた配置） ---- */
+
+.ai-strip {
+  padding: 10px 12px;
+  font-size: 0.92rem;
+}
+
+.ai-strip button,
+.ai-strip .open-button {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.strip-header {
+  margin-bottom: 8px;
+}
+
+.strip-book-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.strip-actions {
+  flex: none;
+  gap: 4px;
+}
+
+.ai-strip .strip-actions button,
+.ai-strip .strip-actions .open-button {
+  background: transparent;
+  color: var(--strip-ink);
+  border-color: rgb(244 236 216 / 0.4);
+}
+
+.toolbar {
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.toolbar-group {
+  gap: 4px;
+}
+
+.page-form input {
+  min-height: 30px;
+  width: 3em;
+}
+
+.marker-toggle {
+  width: auto;
+  margin-left: auto;
+}
+
+.passage-card,
+.summary-card {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(244 236 216 / 0.25);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.passage-card h2 {
+  font-size: 0.95rem;
+  margin: 0 0 6px;
+}
+
+.card-actions {
+  gap: 4px;
+}
+
+.ai-strip .card-actions button {
+  min-height: 28px;
+  font-size: 0.8rem;
+}
+
+.passage-card blockquote {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+/* ---- 質問と答え ---- */
+
+.quick-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.ai-strip .quick-questions button {
+  background: rgb(244 236 216 / 0.1);
+  color: var(--strip-ink);
+  border-color: rgb(244 236 216 / 0.35);
+  border-radius: 999px;
+}
+
+.ask-row {
+  display: flex;
+  gap: 4px;
+}
+
+.ask-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(244 236 216 / 0.5);
+  background: #fffaf0;
+}
+
+.ask-status {
+  margin: 6px 0;
+  opacity: 0.8;
+}
+
+.ask-error {
+  margin: 6px 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgb(155 44 44 / 0.35);
+}
+
+.ask-error p {
+  margin: 0;
+}
+
+.raw {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.8rem;
+  max-height: 10em;
+  overflow: auto;
+}
+
+.qa {
+  margin: 8px 0;
+}
+
+.qa-question {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.answer-speech {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: #fff;
+}
+
+.answer-detail {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  opacity: 0.92;
+}
+
+.answer-detail > :first-child {
+  margin-top: 0;
+}
+
+.answer-figure {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border: 1px dashed rgb(244 236 216 / 0.5);
+  border-radius: 6px;
+}
+
+.answer-concepts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+}
+
+.answer-concepts li {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgb(242 165 65 / 0.25);
+  font-size: 0.8rem;
+}
+
+.summary-feedback {
+  margin: 8px 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: rgb(255 255 255 / 0.06);
+}
+
+/* ---- 設定 ---- */
+
+.settings-form {
+  display: grid;
+  gap: 16px;
+  max-width: 36rem;
+}
+
+.settings-form label {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.settings-form small {
+  font-weight: normal;
+  opacity: 0.75;
+}
+
+.settings-form input,
+.settings-form select {
+  font: inherit;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid #b8ae96;
+  border-radius: 6px;
+  background: #fffaf0;
+}
+
+.key-row {
+  display: flex;
+  gap: 6px;
+}
+
+.key-row input {
+  flex: 1;
+}
