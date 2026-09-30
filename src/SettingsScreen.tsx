@@ -65,7 +65,6 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
                 type="number"
                 min={256}
                 max={64000}
-                step={256}
                 value={s.maxTokens}
                 onChange={(e) => set({ maxTokens: Number(e.target.value) || DEFAULT_SETTINGS.maxTokens })}
               />
