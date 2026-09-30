@@ -1,0 +1,116 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`まとめの「抜け一つ」の文脈：スナップショット（書き直さない約束を含む） 1`] = `
+{
+  "effort": "low",
+  "max_tokens": 1234,
+  "messages": [
+    {
+      "content": [
+        {
+          "text": "# 本
+本
+
+# 節
+1.2 Building a Model
+
+# 節の本文
+1.2 Building a Model 
+To build a model of a text is to hold its parts in relation. Which idea depends on
+which? What would break if one sentence were removed? A model is something you can
+run forward: given a new case, it predicts what the author would say.
+Questions are the tool for building such a model. A good question names a specific
+passage and asks how it connects to something else. A vague question gets a vague
+answer.
+Fixture marker for page 2: BIRCH. 
+- 2 - When you return to a passage you questioned before, the old question is a map. It
+shows where you were confused and what resolved the confusion. Keeping those
+questions next to the text turns a single reading into a record you can revisit.
+The end of a section is a natural place to stop and check. Can you say, without
+looking, what the section claimed and why? If not, the model is not yet built.
+Fixture marker for page 3: CEDAR. 
+- 3 - 
+
+# 読み手のまとめ（書き直さないこと）
+問いを持って読む。",
+          "type": "text",
+        },
+      ],
+      "role": "user",
+    },
+  ],
+  "model": "test-model",
+  "system": "あなたは、読み手が自分の言葉で書いた節のまとめを読む相棒です。
+約束：
+- まとめを書き直さない。言い換え・添削・模範解答を出さない。
+- 節の本文に照らして、まとめから抜けている大事な点を「一つだけ」、短く指摘する（どこを読み返せばよいかの手がかりを添えてよい）。
+- 読み手がまだ読んでいないページの内容には触れない。
+- 日本語で、2文以内。",
+}
+`;
+
+exports[`質問の文脈：スナップショット 1`] = `
+{
+  "effort": "low",
+  "max_tokens": 1234,
+  "messages": [
+    {
+      "content": [
+        {
+          "text": "なぞった範囲の画像（数式などは文字より画像が正確）：",
+          "type": "text",
+        },
+        {
+          "source": {
+            "data": "iVBORw0KGgoFAKE",
+            "media_type": "image/png",
+            "type": "base64",
+          },
+          "type": "image",
+        },
+        {
+          "text": "# 本
+書名：テスト用の本 Fixture Book
+章：Chapter 1 Reading Slowly
+節：1.2 Building a Model
+現在のページ：3
+
+# なぞった一節
+the old question is a map.
+
+# 一節を含む文（前後の文を添える）
+When you return to a passage you questioned before, the old question is a map.
+
+# このページの文字（3ページ）
+When you return to a passage you questioned before, the old question is a map. It
+shows where you were confused and what resolved the confusion. Keeping those
+questions next to the text turns a single reading into a record you can revisit.
+The end of a section is a natural place to stop and check. Can you say, without
+looking, what the section claimed and why? If not, the model is not yet built.
+Fixture marker for page 3: CEDAR. 
+- 3 - 
+
+# 同じ章で以前に聞いたこと（新しい順）
+- p.2「モデルとは？」→ 先を予測できる理解のこと。
+- p.1「なぜゆっくり？」→ ずれに気づくため。
+
+# 質問
+どういう意味？",
+          "type": "text",
+        },
+      ],
+      "role": "user",
+    },
+  ],
+  "model": "test-model",
+  "system": "あなたは、読み手が本を自分の頭で読むのを隣で手伝う読書の相棒です。
+約束：
+- 読み手がまだ読んでいないページの内容には触れない。渡された現在ページまでの文字だけを根拠にし、先の展開を明かさない。
+- 読み手の文章を書き直さない。
+- なぞった一節は指で選んだもので、端が少しこぼれたり欠けたりしている。前後の文から、読み手が指したかった範囲を汲んで答える。
+- 要約で済ませず、読み手が自分で考える手がかりになる答えにする。
+- 日本語で答える。speech は声に出して読む一文（40字程度まで）、detail は画面に出す補足（Markdown 可、短めに）。
+- 図が理解を大きく助けるときだけ figure に題・大きさ（inline か page）・種類を入れ、そうでなければ null。
+- concepts には、この一節の鍵になる概念を最大3つ。",
+}
+`;

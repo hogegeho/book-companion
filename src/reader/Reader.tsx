@@ -88,9 +88,6 @@ export function Reader({ book, doc, onPageChange, passage, onPassage, controlsTa
 
   const controls = (
     <div className="toolbar" role="toolbar" aria-label="本の操作">
-      <span className="book-title" title={book.title}>
-        {book.title}
-      </span>
       <div className="toolbar-group">
         <button type="button" onClick={() => goTo(page - 1)} disabled={page <= 1} aria-label="前のページ">
           ‹
@@ -115,6 +112,15 @@ export function Reader({ book, doc, onPageChange, passage, onPassage, controlsTa
         </form>
         <button type="button" onClick={() => goTo(page + 1)} disabled={page >= numPages} aria-label="次のページ">
           ›
+        </button>
+        <button
+          type="button"
+          className="marker-toggle"
+          onClick={() => setMarkerMode((m) => !m)}
+          aria-pressed={markerMode}
+          title="オンのあいだ、指でなぞった一節を選ぶ"
+        >
+          マーカー
         </button>
       </div>
       <div className="toolbar-group">
@@ -154,15 +160,6 @@ export function Reader({ book, doc, onPageChange, passage, onPassage, controlsTa
           ↔
         </button>
       </div>
-      <button
-        type="button"
-        className="marker-toggle"
-        onClick={() => setMarkerMode((m) => !m)}
-        aria-pressed={markerMode}
-        title="オンのあいだ、指でなぞった一節を選ぶ"
-      >
-        マーカー
-      </button>
     </div>
   )
 

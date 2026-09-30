@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { ChangelogScreen } from './ChangelogScreen.tsx'
+import { askAboutPassage, askSummaryGap } from './ai/ask.ts'
 import { DataScreen } from './DataScreen.tsx'
+import { PassageCard } from './PassageCard.tsx'
+import { SettingsScreen } from './SettingsScreen.tsx'
+import { useSettings } from './settings.ts'
 import { SummaryCard } from './SummaryCard.tsx'
 import type { Book } from './db/db.ts'
 import { useFullscreen } from './fullscreen.ts'
@@ -42,6 +46,9 @@ export default function App() {
   const [passage, setPassage] = useState<Passage | null>(null)
   const [showChangelog, setShowChangelog] = useState(false)
   const [showData, setShowData] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const settings = useSettings()
+  const canAsk = !!settings?.apiKey
   const [currentPage, setCurrentPage] = useState<number | null>(null)
   // 開いている本の節（アウトラインから）。文書ごとに読み直す
   const [sections, setSections] = useState<{ doc: PDFDocumentProxy; list: Section[] } | null>(null)
@@ -50,6 +57,7 @@ export default function App() {
   const [updated, setUpdated] = useState(consumeVersionChange)
   const closeChangelog = useCallback(() => setShowChangelog(false), [])
   const closeData = useCallback(() => setShowData(false), [])
+  const closeSettings = useCallback(() => setShowSettings(false), [])
 
   // 起動時：最後に開いた本を開き直す
   useEffect(() => {
@@ -152,9 +160,24 @@ export default function App() {
       ? sectionsEndingAt(sections.list, currentPage)
       : []
 
+  const sectionList = state.kind === 'open' && sections?.doc === state.doc ? sections.list : []
+
+  const ask = async (question: string) => {
+    if (state.kind !== 'open' || !passage?.highlightId || !settings) return { ok: false as const, failure: { kind: 'no-key' as const } }
+    const { result } = await askAboutPassage({
+      doc: state.doc,
+      book: state.book,
+      sections: sectionList,
+      passage: { ...passage, highlightId: passage.highlightId },
+      question,
+      settings,
+    })
+    return result.ok ? { ok: true as const } : { ok: false as const, failure: result.failure }
+  }
+
   const openButton = (
     <label className="open-button">
-      PDFを開く
+      {state.kind === 'open' ? '開く' : 'PDFを開く'}
       <input
         ref={fileInput}
         type="file"
@@ -201,45 +224,56 @@ export default function App() {
       </main>
       <aside className="ai-strip" aria-label="AIの帯">
         <header className="strip-header">
-          <h1 className="app-title">Book Companion</h1>
+          <h1 className="visually-hidden">Book Companion</h1>
+          <span className="strip-book-title" title={state.kind === 'open' ? state.book.title : undefined}>
+            {state.kind === 'open' ? state.book.title : 'Book Companion'}
+          </span>
           <div className="strip-actions">
-            {/* 本を開いているあいだは、本側のツールバーを一行に収めるため「開く」をこちらに置く */}
+            {/* 本を開いているあいだは「開く」もこちらに置く（空のときは本の側に大きく出す） */}
             {state.kind === 'open' && openButton}
             {fullscreen.supported && (
               <button type="button" className="fullscreen-button" onClick={() => void fullscreen.toggle()}>
                 {fullscreen.active ? '全画面を終わる' : '全画面'}
               </button>
             )}
+            <button type="button" onClick={() => setShowSettings(true)}>
+              設定
+            </button>
           </div>
         </header>
         <div className="strip-controls" ref={setControlsTarget} />
         {passage ? (
-          <section className="passage-card" aria-label="選んだ一節">
-            <h2>
-              選んだ一節 <small>p.{passage.page}</small>
-            </h2>
-            <blockquote>{passage.text}</blockquote>
-            <div className="card-actions">
-              <button type="button" onClick={() => setPassage(null)}>
-                閉じる
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (passage.highlightId) void deleteHighlight(passage.highlightId)
-                  setPassage(null)
-                }}
-              >
-                この印を消す
-              </button>
-            </div>
-            <p className="placeholder">この一節について質問できるようになります（段5）。</p>
-          </section>
+          <PassageCard
+            key={passage.highlightId ?? 'pending'}
+            passage={passage}
+            canAsk={canAsk}
+            onAsk={ask}
+            onClose={() => setPassage(null)}
+            onDelete={() => {
+              if (passage.highlightId) void deleteHighlight(passage.highlightId)
+              setPassage(null)
+            }}
+            onOpenSettings={() => setShowSettings(true)}
+          />
         ) : (
-          <p className="placeholder">「マーカー」を押して本をなぞると、その一節が印として残り、ここに出ます。</p>
+          <p className="placeholder">「マーカー」を押して本をなぞると、その一節が印として残り、ここで質問できます。</p>
         )}
         {state.kind === 'open' &&
-          endingSections.map((sec) => <SummaryCard key={`${state.book.id}:${sec.id}`} bookId={state.book.id} section={sec} />)}
+          endingSections.map((sec) => (
+            <SummaryCard
+              key={`${state.book.id}:${sec.id}`}
+              bookId={state.book.id}
+              section={sec}
+              onAskGap={
+                canAsk && settings && currentPage !== null
+                  ? async (summary) => {
+                      const r = await askSummaryGap({ doc: state.doc, book: state.book, section: sec, currentPage, summary, settings })
+                      return r.ok ? { ok: true as const } : { ok: false as const, failure: r.failure }
+                    }
+                  : undefined
+              }
+            />
+          ))}
         <footer className="strip-footer">
           {updated && (
             <p className="update-notice" role="status">
@@ -267,6 +301,7 @@ export default function App() {
       {showChangelog && <ChangelogScreen onClose={closeChangelog} />}
       {/* 読み込み・全消去のあとは、記録を読み直すため起動し直す */}
       {showData && <DataScreen onClose={closeData} onChanged={() => window.location.reload()} />}
+      {showSettings && <SettingsScreen onClose={closeSettings} />}
     </div>
   )
 }

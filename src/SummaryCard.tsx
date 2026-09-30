@@ -1,16 +1,28 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'react'
+import { failureMessage, type AiFailure } from './ai/client.ts'
 import type { Section } from './outline.ts'
 import { getSummary, saveSummary } from './records.ts'
 
 const SAVE_DELAY_MS = 600
 
 /** 節の終わりに出す「自分の言葉でまとめ」。書いたそばから節に紐づけて保存する */
-export function SummaryCard({ bookId, section }: { bookId: string; section: Section }) {
+interface Props {
+  bookId: string
+  section: Section
+  /** 抜けを一つ聞く（API キーが無ければ undefined） */
+  onAskGap?: (summary: string) => Promise<{ ok: true } | { ok: false; failure: AiFailure }>
+}
+
+export function SummaryCard({ bookId, section, onAskGap }: Props) {
   // null＝読み込み中
   const [draft, setDraft] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const pending = useRef<string | null>(null)
+  const [asking, setAsking] = useState(false)
+  const [failure, setFailure] = useState<AiFailure | null>(null)
+  const feedback = useLiveQuery(() => getSummary(bookId, section.id).then((s) => s?.feedback ?? null), [bookId, section.id])
 
   useEffect(() => {
     let alive = true
@@ -63,7 +75,34 @@ export function SummaryCard({ bookId, section }: { bookId: string; section: Sect
       <p className="summary-status" role="status">
         {status === 'saving' ? '書いています…' : status === 'saved' ? '保存しました' : ''}
       </p>
-      <p className="placeholder">AIは書き直さず、抜けを一つだけ指摘します（段5）。</p>
+      {onAskGap && (
+        <button
+          type="button"
+          disabled={asking || !draft?.trim()}
+          onClick={async () => {
+            await flush()
+            setAsking(true)
+            setFailure(null)
+            const r = await onAskGap(draft ?? '')
+            setAsking(false)
+            if (!r.ok) setFailure(r.failure)
+          }}
+        >
+          {asking ? '読んでいます…' : '抜けを一つ聞く'}
+        </button>
+      )}
+      {feedback && (
+        <p className="summary-feedback" aria-label="抜けの指摘">
+          <strong>抜け：</strong>
+          {feedback}
+        </p>
+      )}
+      {failure && (
+        <p className="ask-error" role="alert">
+          {failureMessage(failure)}
+        </p>
+      )}
+      <p className="placeholder">AIはまとめを書き直さず、抜けを一つだけ指摘します。</p>
     </section>
   )
 }

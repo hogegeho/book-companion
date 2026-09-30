@@ -1,4 +1,4 @@
-import { db as defaultDb, type BookDB, type Highlight } from './db/db.ts'
+import { db as defaultDb, type BookDB, type Highlight, type Question } from './db/db.ts'
 import type { Passage } from './reader/selection.ts'
 
 // 印・まとめ・読書記録の読み書き。db は差し替えられる（テスト用）
@@ -50,4 +50,27 @@ export async function startPageView(bookId: string, page: number, db: BookDB = d
   return async () => {
     await db.readingLog.update(id, { closedAt: now() })
   }
+}
+
+export async function addQuestion(q: Omit<Question, 'id' | 'createdAt'>, db: BookDB = defaultDb, now = Date.now()): Promise<Question> {
+  const full: Question = { ...q, id: crypto.randomUUID(), createdAt: now }
+  await db.questions.put(full)
+  return full
+}
+
+export function questionsForHighlight(highlightId: string, db: BookDB = defaultDb) {
+  return db.questions.where('highlightId').equals(highlightId).sortBy('createdAt')
+}
+
+/** 同じ章の最近の問い（新しい順）。現在ページより後ろのものは除く */
+export async function recentQuestionsInChapter(bookId: string, chapter: string, uptoPage: number, limit = 5, db: BookDB = defaultDb) {
+  const all = await db.questions.where('[bookId+chapter]').equals([bookId, chapter]).toArray()
+  return all
+    .filter((q) => q.page <= uptoPage)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, limit)
+}
+
+export async function saveSummaryFeedback(bookId: string, sectionId: string, feedback: string, db: BookDB = defaultDb) {
+  await db.summaries.update(summaryId(bookId, sectionId), { feedback })
 }

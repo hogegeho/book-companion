@@ -16,6 +16,8 @@ export interface Passage {
   rects: PdfRect[]
   /** 印として保存したあとの id */
   highlightId?: string
+  /** なぞった範囲を canvas から切り出した PNG（base64）。数式を画像でも送るため */
+  image?: string | null
 }
 
 /**
